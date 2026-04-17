@@ -1,0 +1,37 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ] # 如果你的默认分支叫 master，请把这里改成 master
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Login to Aliyun ACR
+      uses: aliyun/acr-login@v1
+      with:
+        login-server: crpi-eaavxswe2ezmeaqy.cn-guangzhou.personal.cr.aliyuncs.com
+        region-id: cn-guangzhou
+        username: ${{ secrets.ALIYUN_USERNAME }}
+        password: ${{ secrets.ALIYUN_PASSWORD }}
+
+    - name: Build and Push Docker Image
+      run: |
+        # 你的专属镜像地址
+        IMAGE_NAME="crpi-eaavxswe2ezmeaqy.cn-guangzhou.personal.cr.aliyuncs.com/koudai-dev/my-app"
+        IMAGE_TAG=${{ github.sha }}
+        
+        echo "开始构建镜像: $IMAGE_NAME:$IMAGE_TAG"
+        docker build -t $IMAGE_NAME:$IMAGE_TAG .
+        
+        echo "开始推送镜像到阿里云..."
+        docker push $IMAGE_NAME:$IMAGE_TAG
+        
+        echo "推送 latest 标签..."
+        docker tag $IMAGE_NAME:$IMAGE_TAG $IMAGE_NAME:latest
+        docker push $IMAGE_NAME:latest
